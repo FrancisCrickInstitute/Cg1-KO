@@ -1,0 +1,86 @@
+---
+title: "Processing RNAseq"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+## Processing RNAseq nfcore output file
+
+Processing of nfcore output file for QC before DESEQ.
+
+```{r}
+# Load libraries:
+library(limma)
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(ggrepel)
+library(data.table)
+library(AnnotationDbi)
+library(org.Mm.eg.db)
+library(RColorBrewer)
+library(viridis)
+library(PCAtools)
+library(patchwork)
+library(ggpubr)
+library(rstatix)
+
+
+# Set working directory:
+setwd("~/Documents/My_R")
+
+
+# Create output_dir:
+output_dir <- "/Users/velandn/Documents/My_R/Github_TEST/"
+# output_dir <- "/Users/path/to/your/own/directory/of/analysis/output"
+
+ifelse(!dir.exists(file.path(output_dir)),
+       dir.create(file.path(output_dir)),
+       "Directory Exists")
+
+```
+
+```{r}
+######### I. Format rsem counts file for analysis.-----------------------------------
+
+# 1. Read rsem counts data as dataframe:
+Tissue_Raw_Counts = read.delim(file = "DATA_BABS-DSL/RNAseq/Counts/Epidermis_2023.raw_counts.tsv") 
+# read.delim is used for reading rsem.merged.gene_counts.tsv files as dataframes
+# Replace name of file according to tissue used (e.g. for Epidermis use Epidermis_Raw_Counts)
+
+# 2. Organize rsem counts dataframe:
+row.names(Epi_Raw_Counts) = Epi_Raw_Counts[,1] 
+# set rownames to be the first column from the counts data frame
+
+Epi_Raw_Counts = as.matrix(Epi_Raw_Counts[,-1:-2]) 
+# deselect the first two columns and convert to a matrix
+
+Epi_Raw_Counts =  round(Epi_Raw_Counts) 
+# round numerical values to integers
+
+# 3. Remove specific samples/replicates from Counts dataframe: 
+Epi_Raw_Counts = Epi_Raw_Counts[,-7] # Skin_Het_4 = column 7
+
+
+# 4. Create information table (colData file) as dataframe with correct row names:
+Epi_colData = read.delim(file = "DATA_BABS-DSL/RNAseq/Counts/Epidermis_2023_colData.txt", row.names = 1) 
+# row.names = 1 --> sets rownames to be the first column from the colData frame
+
+# 5. Remove specific samples/replicates from colData dataframe: 
+Epi_colData = Epi_colData[-7,] # Skin_Het_4 = row 7
+
+# 6. Rename colnames of Raw_Counts:
+colnames(Epi_Raw_Counts) = c("Skin_WT_1", "Skin_WT_2", "Skin_WT_4", "Skin_Het_1", "Skin_Het_2", "Skin_Het_3")
+
+# 7. Rename rownames of colData:
+rownames(Epi_colData) = Epi_colData$Sample
+
+# 8. Confirm that rownames(Epi_colData) == colnames(Epi_Raw_Counts)
+rownames(Epi_colData) == colnames(Epi_Raw_Counts)
+
+# 9. Edit Epi_colData by adding Batch column:
+Epi_colData$Batch = c("1", "1", "2", "1", "1", "2")
+```
+
+Check both the Epi_Raw_Counts and the Epi_colData to verify format.
