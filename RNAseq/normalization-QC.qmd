@@ -16,6 +16,7 @@ editor: visual
 
 ```{r}
 #| echo: false
+#| message: false
 library(DESeq2)
 library(limma)
 library(org.Mm.eg.db)
