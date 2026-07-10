@@ -1,0 +1,7 @@
+Genotype	Tissue	Sample	Sex	Batch
+MUN5305A1	WT	Epidermis	Skin_WT_1	Male	1
+MUN5305A2	WT	Epidermis	Skin_WT_2	Male	1
+MUN5305A4	WT	Epidermis	Skin_WT_4	Male	2
+MUN5305A5	KO	Epidermis	Skin_Het_1	Male	1
+MUN5305A6	KO	Epidermis	Skin_Het_2	Male	1
+MUN5305A7	KO	Epidermis	Skin_Het_3	Male	2

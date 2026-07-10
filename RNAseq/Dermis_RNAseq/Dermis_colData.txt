@@ -1,0 +1,7 @@
+Genotype	Tissue	Sample	Sex	ASF_ID	Batch
+MUN5305A23	KO	Dermis	Dermis_Het_1	Male	MUN5305A23	1
+MUN5305A24	KO	Dermis	Dermis_Het_2	Male	MUN5305A24	1
+MUN5305A26	KO	Dermis	Dermis_Het_4	Male	MUN5305A26	2
+MUN5305A27	WT	Dermis	Dermis_WT_1	Female	MUN5305A27	1
+MUN5305A28	WT	Dermis	Dermis_WT_2	Male	MUN5305A28	1
+MUN5305A30	WT	Dermis	Dermis_WT_4	Female	MUN5305A30	2

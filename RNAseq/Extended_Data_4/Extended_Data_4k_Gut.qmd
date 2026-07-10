@@ -1,0 +1,158 @@
+---
+title: "Extended_Data_4k_Gut"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+# Extended_Data_4k_Gut
+
+- This script allows to re-create Extended_Data_4k_Gut from GSEA using clusterProfiler and enrichplot packages to visualize gene expression changes globally across reference gene sets.
+
+- Starts with a dataframe that is the annotated output from DESeq, which was generated with the script "**04_DiffGeneExpression.qmd**" and relies on the values and comparisons selected during the analysis using DESeq2 package. For more detailed information, please refer to DESeq2 documentation.
+
+```{r}
+# Load Libraries
+#| echo: false
+#| message: false
+library(fgsea)
+library(msigdbr)
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(ggrepel)
+library(clusterProfiler)
+library(enrichplot)
+library(patchwork)
+library(ggplotify)
+
+#library(genekitr)
+#library(msigdb)
+
+```
+
+1.  Read DESEq results file as dataframe:
+
+```{r}
+# 1. Read DESEq results file as dataframe:
+Gut_DESeq <- read.csv(file= "~/Documents/My_R/Github_Cg1-KO/RNAseq/Figure_3/Gut_DESeq.csv")
+Gut_DESeq = Gut_DESeq[,-1] # Optional to remove first column in case is numbers from row names. 
+
+```
+
+2.  GSEA using clusterProfiler package (for plotting of enrichment score across genesets)
+
+```{r}
+# Format geneset for clusterProfiler:
+geneset_H <- msigdbr(species = "Mus musculus", category = "H") %>% 
+  dplyr::select(gs_name, gene_symbol)
+head(geneset_H)
+gene_set_name = "Hallmarks"
+```
+
+```{r}
+# 8. ClusterProfiler GSEA analysis
+
+#GSEA analysis requires a ranked gene list format, which contains three features:
+  # 1. numeric vector: fold change or other type of numerical variable
+  # 2. named vector: every number has a name, the corresponding gene ID
+  # 3. sorted vector: number should be sorted in decreasing order
+#You can prepare your own geneList via the following command:
+
+## feature 1: numeric vector
+gene.list2 <- Gut_DESeq[!grepl("ENSMUS",Gut_DESeq$gene_name),] 
+
+geneList <- sign(gene.list2$log2FoldChange)*(-log10(gene.list2$pvalue)) # we will use the signed p values from spatial DGE as ranking
+
+## feature 2: named vector
+names(geneList) = as.character(gene.list2$gene_name)
+
+## feature 3: decreasing order
+geneList = sort(geneList, decreasing = TRUE)
+head(geneList)
+
+# Run GSEA using ClusterProfiler GSEA function
+GSEA_CP <- GSEA(geneList, exponent = 0, pvalueCutoff = 10, TERM2GENE = geneset_H)
+head(GSEA_CP)
+```
+
+9.  Visualize the distribution of the gene set and the enrichment score (GSEAplot) with gseaplot2 function from enrichplot package
+
+```{r}
+# 9. Visualize the distribution of the gene set and the enrichment score with enrichplot
+
+gseaplot2(GSEA_CP, geneSetID = 1, title = paste0("Top GSEA pathway in Gut: \n", GSEA_CP$Description[1]), pvalue_table = TRUE)
+```
+
+```{r}
+# Customize function gseaplot2 from enrichplot: to add NES value and edit some aesthetics:
+gseaplot2_new <- enrichplot:::gseaplot2
+
+fix(gseaplot2_new)
+#trace("gseaplot2_new", edit = TRUE)
+
+#In the function, look for line 79: "if (pvalue_table) {..." and modify the code from lines 80, 81, 82 and 90 to look like this:
+#        pd <- x[geneSetID, c("NES", "p.adjust")]
+#        rownames(pd) <- ""
+#        pd <- pd[, ]
+#        if (is.null(pvalue_table_rownames)) {
+#            rows <- NULL
+#        }
+#        else {
+#            if (length(pvalue_table_rownames) != 1) {
+#                stop("the length of `pvalue_table_rownames` should be equal to 1")
+#            }
+#            rows <- x[geneSetID, ""]
+
+# Also to modify aesthetics: modify line 12 and replace panel.grid.major.y wtih:
+#       panel.grid.major.y = element_line(colour = "grey92"), panel.grid.minor.y = element_blank()) + 
+
+# Finally, change color of lower plot from "grey92" to "black" by modifying line 62.
+
+# Check if plot looks as desired by running this code:
+gseaplot2_new(GSEA_CP, geneSetID = 1, title = paste0("Top GSEA pathway in Gut: \n", GSEA_CP$Description[1]), pvalue_table = TRUE)
+  
+  
+```
+
+```{r}
+# Create custome GSEA score plot for Top GSEa pathway
+gseaplot2_new(GSEA_CP, geneSetID = 1, title = paste0("Top GSEA pathway in Gut: \n", GSEA_CP$Description[1]), pvalue_table = TRUE)
+```
+
+```{r}
+# Save gseaplot:
+outTitle <- paste0("GSEA_Test_", pathway_name, TopSinglePathway)
+ggsave(paste0(output_dir, outTitle, ".pdf"),  width = 6, height = 4, units = "in", dpi = 72)
+```
+
+10. Plot multiple TOP GSEA pathways from enrichplot using ggplotify + patchwork
+
+```{r}
+# 10. Plot multiple TOP GSEA pathways from clusterProfiler using ggplotify + patchwork
+p1 = as.ggplot(gseaplot2_new(GSEA_CP, geneSetID = 1, title = GSEA_CP$Description[1], pvalue_table = TRUE))
+p2 = as.ggplot(gseaplot2_new(GSEA_CP, geneSetID = 2, title = GSEA_CP$Description[2], pvalue_table = TRUE))
+p3 = as.ggplot(gseaplot2_new(GSEA_CP, geneSetID = 3, title = GSEA_CP$Description[3], pvalue_table = TRUE))
+p4 = as.ggplot(gseaplot2_new(GSEA_CP, geneSetID = 4, title = GSEA_CP$Description[4], pvalue_table = TRUE))
+  
+patchwork <- (p1 + p2 + p3 + p4)
+patchwork + plot_annotation(
+  title = "Gut",
+  theme = theme(plot.title = element_text(size = 20)))
+
+```
+
+```{r}
+# Save GSEA summary table plot: 
+outTitle <- paste0("GSEA_CP_Gut_", gene_set_name , "_TopPathways")
+ggsave(paste0(output_dir, outTitle, ".pdf"),  width = 9, height = 8.5, units = "in", dpi = 72)
+```
+
+# Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+```{r}
+sessionInfo()
+```

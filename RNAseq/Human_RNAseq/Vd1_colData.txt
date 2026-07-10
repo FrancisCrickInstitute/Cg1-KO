@@ -1,0 +1,5 @@
+Condition	Fullname	gRNA	Batch
+A3	Control	gRNA_4_Control	gRNA_4	1
+A4	KO	gRNA_4_KO	gRNA_4	1
+A5	Control	gRNA_5_Control	gRNA_5	2
+A6	KO	gRNA_5_KO	gRNA_5	2

@@ -1,0 +1,7 @@
+﻿sample,fastq_1,fastq_2,strandedness
+MUN5305A1,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A1_S197_L001_R1_001.fastq.gz,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A1_S197_L001_R2_001.fastq.gz,auto
+MUN5305A2,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A2_S198_L001_R1_001.fastq.gz,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A2_S198_L001_R2_001.fastq.gz,auto
+MUN5305A4,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A4_S199_L001_R1_001.fastq.gz,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A4_S199_L001_R2_001.fastq.gz,auto
+MUN5305A5,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A5_S200_L001_R1_001.fastq.gz,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A5_S200_L001_R2_001.fastq.gz,auto
+MUN5305A6,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A6_S201_L001_R1_001.fastq.gz,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A6_S201_L001_R2_001.fastq.gz,auto
+MUN5305A7,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A7_S202_L001_R1_001.fastq.gz,/nemo/lab/haydaya/data/STPs/babs/inputs/miguel.munoz-ruiz/asf/RN22295/MUN5305A7_S202_L001_R2_001.fastq.gz,auto

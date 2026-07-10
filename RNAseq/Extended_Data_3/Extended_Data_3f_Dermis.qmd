@@ -1,0 +1,84 @@
+---
+title: "Extended_Data_3f_Dermis"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+# Extended_Data_3f_Dermis
+
+- This script allows to re-create Extended_Data_3f_Dermis from GSEA using fgsea package to visualize gene expression changes globally across reference gene sets.
+
+- Starts with a dataframe that is the GSEA output from fgsea, which was generated with the script "**07_GSEA.qmd**" and relies on the values and comparisons selected during the DESeq analysis using DESeq2 package with the script "**04_DiffGeneExpression.qmd**". For more detailed information, please refer to DESeq2 documentation.
+
+```{r}
+# Load Libraries
+#| echo: false
+#| message: false
+library(fgsea)
+library(msigdbr)
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(ggrepel)
+library(clusterProfiler)
+library(enrichplot)
+library(patchwork)
+library(ggplotify)
+
+#library(genekitr)
+#library(msigdb)
+
+```
+
+1.  Read GSEa results file as dataframe:
+
+```{r}
+# 1. Read GSEA results file as dataframe:
+Top5 <- read.csv(file = paste0(output_dir,"Dermis_GSEA-Top5.csv"))
+Top5 = Top5[,-1] # Optional to remove first column in case is numbers from row names. 
+```
+
+2.  Plot Summary of GSEA results as a Dotplot
+
+```{r}
+# 2.  Plot summary of top pathways: Dotplot ***********************
+Top5 %>%
+  ggplot(aes(x = reorder(pathway, NES), y = NES, color = padj, size = size)) +
+  geom_point() +
+  scale_color_gradient(low = "red", high = "blue", guide = guide_colourbar(reverse = TRUE)) +
+  scale_size(
+  range = c(2, 5),
+  breaks = c(134, 167, 196),  # set manually if preferred
+  name = "Gene count"
+) +
+  coord_flip() +
+  xlab("Pathways") +
+  ylab("Enrichment Score (NES)") +
+  ggtitle(paste0(" Top GSEA Dermis ", gene_set_name)) +
+  guides(
+    color = guide_colourbar(order = 1, reverse = TRUE),
+    size  = guide_legend(order = 2)) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 16)) +
+  theme(plot.colour = element_text(size = 26)) +
+  theme(axis.text.x = element_text(angle = 0, colour = "black", size = 12)) +
+  theme(axis.text.y = element_text(angle = 0, colour = "black", size = 10)) +
+  theme(legend.title = element_text(size = 12)) +
+  theme(legend.text = element_text(size = 10))
+```
+
+```{r}
+# Save GSEA summary table plot:
+outTitle <- paste0("GSEA_DP_Dermis_", gene_set_name)
+ggsave(paste0(output_dir, outTitle, ".pdf"),  width = 6.5, height = 4, units = "in", dpi = 72)
+```
+
+# Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+```{r}
+sessionInfo()
+```

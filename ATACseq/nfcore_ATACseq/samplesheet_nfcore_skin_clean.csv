@@ -1,0 +1,15 @@
+sample,fastq_1,fastq_2,replicate,single_end
+WT_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792280_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792280_2.fastq.gz,1,0
+WT_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792281_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792281_2.fastq.gz,1,0
+WT_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792278_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792278_2.fastq.gz,2,0
+WT_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792279_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792279_2.fastq.gz,2,0
+WT_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792276_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792276_2.fastq.gz,3,0
+WT_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792277_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792277_2.fastq.gz,3,0
+HET_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792274_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792274_2.fastq.gz,1,0
+HET_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792275_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792275_2.fastq.gz,1,0
+HET_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792272_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792272_2.fastq.gz,2,0
+HET_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792273_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792273_2.fastq.gz,2,0
+HET_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792270_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792270_2.fastq.gz,3,0
+HET_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792271_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792271_2.fastq.gz,3,0
+HET_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792268_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792268_2.fastq.gz,4,0
+HET_Skin,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792269_1.fastq.gz,/SAN/colcc/Hayday_A/Nicolas.Veland/bulk.ATACseq/revision.rerun/download/fastq/SRR30792269_2.fastq.gz,4,0

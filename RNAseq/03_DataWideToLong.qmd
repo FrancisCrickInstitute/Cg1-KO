@@ -1,0 +1,59 @@
+---
+title: "DataWideToLong"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+# Conversion of Count Dataframe Wide format to Long format
+
+This script starts with the output data from **02_normalization-QC.qmd** script.
+
+This script perform the following steps:
+
+1.  Modify counts dataframe from wide to long.
+2.  Reorganize dataframe by separating strings, creating new columns and renaming.
+3.  Reorder columns and replace sample labels if needed.
+4.  Export normalized count wide dataframe.
+
+```{r}
+# Load Libraries
+#| echo: false
+#| message: false
+library(tidyverse)
+```
+
+Start with a normalized dataframe:
+
+```{r}
+# 1. Modifiy counts dataframe from wide to long:
+Gut_long_vst_counts <- pivot_longer(Gut_normalized_withoutBatch, -c(Ensembl_id, gene), names_to = "Sample", values_to = "Expression")
+
+# 2. Reorganize dataframe by separating strings, creating new columns and renaming:
+Gut_long_vst_counts <- separate(Gut_long_vst_counts, Sample, into=c("Genotype", "Replicate"), sep = "_", remove = FALSE, extra = "merge")
+
+#Epidermis_long_vst_counts <- separate(Epidermis_long_vst_counts, Replicate, into=c("Genotype", NA), sep = "_", remove = FALSE)
+
+Gut_long_vst_counts <- separate(Gut_long_vst_counts, Replicate, into=c(NA, "Genotype"), sep = "_", remove = FALSE)
+
+# 3. Reorder columns and replace sample labels if needed
+Gut_long_vst_counts <- Gut_long_vst_counts[,c(1:3,5,4,6)]
+
+Gut_long_vst_counts <- mutate(Gut_long_vst_counts, Genotype = str_replace(Genotype, "HET", "TCR KO"))
+
+# 4. Exporting Normalized Long Counts as csv dataframe:
+write.csv(as.data.frame(Gut_long_vst_counts), file= paste0(output_dir,"Gut_long_vst_counts.csv"))
+
+```
+
+## Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+- Check that counts dataframe (long_vst_counts) has the correct columns.
+
+- If dataframe look Ok, proceed to 05_Boxplots.qmd, but to include p values, 04_DiffGeneExpression.qmd script needs to be run first as p value included in boxplots comes from DESeq padj (p adjusted) values.
+
+```{r}
+sessionInfo()
+```

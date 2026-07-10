@@ -1,0 +1,100 @@
+---
+title: "Extended_Data_3d_Dermis"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+# Extended_Data_3d_Dermis
+
+- This script allows to re-create boxplots included in Extended_Data_3d_Dermis using ggplot2 package to visualize expression levels of specific genes using normalized counts on a dataframe that has been converted from wide to long and its the output of the script "**03_DataWideToLong.qmd**".
+
+- The significance indicated by the p value in the boxplot is taken from the padj (p adjusted) value from dataframe DESeq that is the annotated output from DESeq, which was generated with the script "**04_DiffGeneExpression.qmd**" and relies on the values and comparisons selected during the analysis using DESeq2 package. For more detailed information, please refer to DESeq2 documentation.
+
+```{r}
+# Load Libraries
+#| echo: false
+#| message: false
+library(ggplot2)
+library(ggrepel)
+library(tidyverse)
+library(magrittr)
+```
+
+1.  The long count dataframe can be imported using the following code:
+
+```{r}
+# 1. Read CLEAN FINAL filtered count wide dataframe as csv:
+Dermis_long_vst_counts <- read.csv(file= paste0(output_dir,"Dermis_long_vst_counts.csv"))
+Dermis_long_vst_counts = Dermis_long_vst_counts[,-1] # to remove the first column X with row numbers
+```
+
+2.  The DESeq dataframe can be imported using this code
+
+```{r}
+# 2. Read DESEq results file as dataframe:
+Dermis_DESeq <- read.csv(file= "~/Documents/My_R/Github_Cg1-KO/RNAseq/Figure_2/Dermis_DESeq.csv")
+Dermis_DESeq = Dermis_DESeq[,-1] # Optional to remove first column in case is numbers from row names. 
+```
+
+3.  Define GOI list
+
+```{r}
+GOI <- c("Trgc1", "Trgv4", "Trgv6", "Trgc3")
+```
+
+4.  Make Boxplots in Loop
+
+```{r}
+# 5. Boxplots of multiple genes in Loop saved in the same pdf,
+mydata = Dermis_long_vst_counts
+mydata_source = "Dermis_long_vst_counts"
+mydata_pvalue = Dermis_DESeq
+
+
+pdf(paste0(output_dir,"BP_TCR-genes_unlog_", mydata_source, ".pdf"), width = 3.5, height = 3.5)
+for (mygene in GOI){
+  print(mygene)
+ 
+  if (!mygene %in% mydata_pvalue$gene_name) {
+    #pvalue = "NA"
+    p_label <- "p = NA"
+  } else {
+     # Extract the p-value for the current gene
+  pvalue <- mydata_pvalue[which(mydata_pvalue$gene_name == mygene), "padj"]
+  p_label <- paste("p =", format(pvalue, digits = 2))
+  }
+  
+  bp<- ggplot(mydata %>% dplyr::filter(gene == mygene), aes(x = Genotype, y = Expression)) + #2^ for reverse Log transformed (or vst transforemd) data to plot counts in high values (y = 2^Expression) WTvsKO_colors = c("grey40", "red4")
+  geom_boxplot(aes(fill = Genotype)) +
+  geom_jitter(aes(color = Genotype), width = 0.10, shape = 21, 
+              color = "black", stroke = 1, size = 4) + 
+  scale_x_discrete(limits=c("WT", "TCR KO")) +
+  scale_fill_manual(values = c("salmon","grey50")) +
+  labs(y = "Normalized Counts", title = paste("Dermis:", mygene)) +
+  #geom_text_repel(aes(label = Replicate)) + #or label = Replicate depending on column name
+  theme_classic(base_size = 14) +
+  theme(axis.text = element_text(colour = "black", size = 14)) +
+  theme(axis.text.x = element_text(angle = 0, colour = "black", size = 14)) +
+   theme(legend.position="none") +
+  # Add the p-value annotation
+  annotate("text", x = 1.5, y = (max((subset(mydata, gene == mygene))$Expression) * 1.01), label = p_label, size = 5) # add 2^max if using this in aes
+  
+  print(bp)
+  
+}
+
+dev.off()
+
+
+```
+
+# Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+- Customizing different sections of the plot is possible. Please refer to ggplot documentation for additional details.
+
+```{r}
+sessionInfo()
+```

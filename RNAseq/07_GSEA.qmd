@@ -1,0 +1,381 @@
+---
+title: "GSEA"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+# Gene Set Enrichement Analysis (GSEA)
+
+- This script allows to perform a GSEA using fgsea package to visualize gene expression changes globally across reference gene sets.
+
+- Starts with a dataframe that is the annotated output from DESeq, which was generated with the script "**04_DiffGeneExpression.qmd**" and relies on the values and comparisons selected during the analysis using DESeq2 package. For more detailed information, please refer to DESeq2 documentation.
+
+```{r}
+# Load Libraries
+#| echo: false
+#| message: false
+library(fgsea)
+library(msigdbr)
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(ggrepel)
+library(clusterProfiler)
+library(enrichplot)
+library(patchwork)
+library(ggplotify)
+
+#library(genekitr)
+#library(msigdb)
+
+```
+
+1.  Read DESEq results file as dataframe:
+
+```{r}
+# 1. Read DESEq results file as dataframe:
+Dermis_DESeq <- read.csv(file= "~/Documents/My_R/Github_Cg1-KO/RNAseq/Figure_2/Dermis_DESeq.csv")
+Dermis_DESeq = Dermis_DESeq[,-1] # Optional to remove first column in case is numbers from row names. 
+
+```
+
+2.  Prepare ranked list of genes
+
+```{r}
+# 2. Prepare ranked list of genes:
+
+# Try Ranking option 1: using log2FC*log10(pvalue)
+# The magnitude of the ranking will be given by the p value (since use -log10(), the more significant a gene is differentially expressed, the larger that value will be). The sign of the ranking (positive or negative) will be given by the fold-change: upregulated genes will have positive rankings, downregulated genes will have negative rankings.
+gene.list <- Dermis_DESeq[!grepl("ENSMUS",Dermis_DESeq$gene_name),] 
+
+
+gene.rank <- sign(gene.list$log2FoldChange)*(-log10(gene.list$pvalue)) 
+# we will use the signed p values from spatial DGE as ranking
+
+names(gene.rank) <- gene.list$gene_name # genes as names#
+
+#names(gene.rank) <- Dermis_DESeq$X #replace gene_name in gene.rank by using Ensembl IDs from column X in case there are duplicates
+
+###----
+
+#head(ranked_genes)
+
+head(gene.rank)
+
+# Plot ranking to check max and min values:
+#ranked_genes <- sort(ranked_genes, decreasing = TRUE) # sort genes by ranking
+#plot(ranked_genes)
+gene.rank <- sort(gene.rank, decreasing = TRUE) # sort genes by ranking
+plot(gene.rank)
+
+```
+
+3.  Find duplications and correct them.
+
+```{r}
+# Find duplications names, inspect them and fix the issue (if any)
+any(duplicated(names(gene.rank)))
+```
+
+```{r}
+# Inspect them and fix the issue (if any)
+# In case there is duplications of genes names due to issues with gene mapping database (usually happens for lncRNA genes or predicted genes). Is corrected manually by: 
+# 1. find the duplicated gene name in counts dataframe; 
+
+# 2. then search on Ensemble web using the Ensembl_id and identify which is the real and which is the incorrect; 
+Dermis_DESeq %>%
+  mutate(row = row_number()) %>%
+  group_by(gene_name) %>%
+  filter(n() > 1) %>%
+  arrange(gene_name, desc(abs(log2FoldChange))) %>%
+  dplyr::select(row, gene_name, X, sig)
+```
+
+```{r}
+# 3. use the [] indexing with the row number and replace $gene with the "corrected_name" as shown in example. Otherwise next step gives Error.
+Dermis_DESeq$gene_name[3586] = "Naa12" 
+
+```
+
+```{r}
+# Check duplications are no longer present
+Dermis_DESeq %>%
+  mutate(row = row_number()) %>%
+  group_by(gene_name) %>%
+  filter(n() > 1) %>%
+  arrange(gene_name, desc(abs(log2FoldChange))) %>%
+  dplyr::select(row, gene_name, X, sig)
+
+```
+
+```{r}
+# Re-write fixed dataframe (without duplicates)
+write.csv(Dermis_DESeq, file = "~/Documents/My_R/Github_Cg1-KO/RNAseq/Figure_2/Dermis_DESeq.csv")
+```
+
+```{r}
+# Check max and min ranking values:
+# fgsea() does not accept non-finite numbers as rankings
+max(gene.rank)
+min(gene.rank)
+```
+
+4.  Prepare gene sets/pathways:
+
+```{r}
+# 4. Prepare gene sets/pathways:
+
+# 4.1 Retrieve msigdb gene set/pathway data and generate dataframe 
+#category = "H" #<---- hallmark_gene_sets
+#category = "C7" #<---- immuno_gene_sets 
+#category = "C2", subcategory = "CP:REACTOME"
+#category = "C2", subcategory = "CP:KEGG"
+
+msigdbr_df <- msigdbr(species = "Mus musculus", category = "H") #
+
+# 4.2 Format msigdbr_df for fgsea
+gene_set = split(x = msigdbr_df$gene_symbol, f= msigdbr_df$gs_name)
+
+gene_set_name = "Hallmarks" #######<--- CHANGE CORRECT PATHWAY NAME
+
+head(gene_set)
+
+ 
+# Optional: 2.3 Format geneset for clusterProfiler:
+#geneset_H <- msigdbr(species = "Mus musculus", category = "H") %>% 
+#  dplyr::select(gs_name, gene_symbol)
+#head(geneset_H)
+#gene_set_name = "Hallmarks"
+#
+#geneset_IMM <- msigdbr(species = "Mus musculus", category = "C7") %>% 
+#  dplyr::select(gs_name, gene_symbol) 
+#head(geneset_IMM)
+```
+
+5.  Run GSEA using fgsea package
+
+```{r}
+# 5. Run GSEA using fgsea package:
+GSEA_HM <- fgsea(pathways = gene_set, # List of gene sets to check
+                 stats = gene.rank,
+                 scoreType = 'std', # in this case we have both pos and neg rankings. if only pos or neg, set to 'pos', 'neg'
+                 minSize=10, maxSize = 500)
+
+head(GSEA_HM)
+
+GSEA_HM
+
+head(GSEA_HM[order(padj, -abs(NES)), ], n=10)
+
+```
+
+6.  Inspect and subset Top GSEA results
+
+```{r}
+# 6. Inspect and subset Top GSEA results
+sum(GSEA_HM[, padj < 0.05])
+
+length(GSEA_HM$pathway)
+head(GSEA_HM, 20)
+head(GSEA_HM %>% filter(padj <= 0.05))
+
+Top5 = head(GSEA_HM %>%  arrange(-abs(NES)), n = 5) %>% arrange(desc(NES)) 
+#Top5 = head(GSEA_HM %>% filter(padj <= 0.05) %>%  arrange(-abs(NES)), n = 5) %>% arrange(desc(NES)) 
+Top5
+
+
+```
+
+```{r}
+# Inspect top GSEA results
+range(Top5$size)
+min_size <- min(Top5$size)
+max_size <- max(Top5$size)
+mid_size <- round(mean(range(Top5$size)))
+
+min_size
+mid_size
+max_size
+
+Top5 = as.data.frame(Top5)
+Top5 = Top5[, -8]
+write.csv(Top5, file = paste0(output_dir,"Dermis_GSEA-Top5.csv"))
+
+#as.table(head(GSEA_Result %>%  arrange(-abs(NES)), n = 5) %>% arrange(desc(NES))) 
+```
+
+```{r}
+# Read GSEA results file as dataframe:
+Top5 <- read.csv(file = paste0(output_dir,"Dermis_GSEA-Top5.csv"))
+Top5 = Top5[,-1] # Optional to remove first column in case is numbers from row names. 
+```
+
+7.  Plot Summary of GSEA results as a Dotplot
+
+```{r}
+# 7.  Plot summary of top pathways: Dotplot ***********************
+Top5 %>%
+  ggplot(aes(x = reorder(pathway, NES), y = NES, color = padj, size = size)) +
+  geom_point() +
+  scale_color_gradient(low = "red", high = "blue", guide = guide_colourbar(reverse = TRUE)) +
+  scale_size(
+  range = c(2, 5),
+  breaks = c(134, 167, 196),  # set manually if preferred
+  name = "Gene count"
+) +
+  coord_flip() +
+  xlab("Pathways") +
+  ylab("Enrichment Score (NES)") +
+  ggtitle(paste0(" Top GSEA Dermis ", gene_set_name)) +
+  guides(
+    color = guide_colourbar(order = 1, reverse = TRUE),
+    size  = guide_legend(order = 2)) +
+  theme_bw() +
+  theme(plot.title = element_text(size = 16)) +
+  theme(plot.colour = element_text(size = 26)) +
+  theme(axis.text.x = element_text(angle = 0, colour = "black", size = 12)) +
+  theme(axis.text.y = element_text(angle = 0, colour = "black", size = 10)) +
+  theme(legend.title = element_text(size = 12)) +
+  theme(legend.text = element_text(size = 10))
+```
+
+```{r}
+# Save GSEA summary table plot:
+outTitle <- paste0("GSEA_DP_Dermis_", gene_set_name)
+ggsave(paste0(output_dir, outTitle, ".pdf"),  width = 6.5, height = 4, units = "in", dpi = 72)
+```
+
+```{r}
+#  GSEA plot the most significantly enriched pathway
+plotEnrichment(gene_set[[head(GSEA_HM[order(padj), ], 1)$pathway]],
+               gene.rank) + 
+  labs(title = head(GSEA_HM[order(padj), ], 1)$pathway)
+```
+
+```{r}
+TopSinglePathway = head(GSEA_HM[order(padj), ], 1)$pathway
+
+p =plotEnrichment(gene_set[[TopSinglePathway]],
+               gene.rank) +
+  labs(title = paste0("Top GSEA pathway in Dermis: \n", TopSinglePathway)) +
+  scale_x_continuous('Rank') +
+  scale_y_continuous('Enrichment score (ES)')
+p + theme(plot.title = element_text(size=15))
+
+```
+
+8.  GSEA using clusterProfiler package (for plotting of enrichment score across genesets)
+
+```{r}
+# Format geneset for clusterProfiler:
+geneset_H <- msigdbr(species = "Mus musculus", category = "H") %>% 
+  dplyr::select(gs_name, gene_symbol)
+head(geneset_H)
+gene_set_name = "Hallmarks"
+```
+
+```{r}
+# 8. ClusterProfiler GSEA analysis
+
+#GSEA analysis requires a ranked gene list format, which contains three features:
+  # 1. numeric vector: fold change or other type of numerical variable
+  # 2. named vector: every number has a name, the corresponding gene ID
+  # 3. sorted vector: number should be sorted in decreasing order
+#You can prepare your own geneList via the following command:
+
+## feature 1: numeric vector
+gene.list2 <- Dermis_DESeq[!grepl("ENSMUS",Dermis_DESeq$gene_name),] 
+
+geneList <- sign(gene.list2$log2FoldChange)*(-log10(gene.list2$pvalue)) # we will use the signed p values from spatial DGE as ranking
+
+## feature 2: named vector
+names(geneList) = as.character(gene.list2$gene_name)
+
+## feature 3: decreasing order
+geneList = sort(geneList, decreasing = TRUE)
+head(geneList)
+
+# Run GSEA using ClusterProfiler GSEA function
+GSEA_CP <- GSEA(geneList, exponent = 0, pvalueCutoff = 10, TERM2GENE = geneset_H) #<- ISSUE HERE, NOT WORKING :S
+head(GSEA_CP)
+```
+
+9.  Visualize the distribution of the gene set and the enrichment score (GSEAplot) with gseaplot2 function from enrichplot package
+
+```{r}
+# 9. Visualize the distribution of the gene set and the enrichment score with enrichplot
+
+gseaplot2(GSEA_CP, geneSetID = 1, title = paste0("Top GSEA pathway in Dermis: \n", GSEA_CP$Description[1]), pvalue_table = TRUE)
+```
+
+```{r}
+# Customize function gseaplot2 from enrichplot: to add NES value and edit some aesthetics:
+gseaplot2_new <- enrichplot:::gseaplot2
+
+fix(gseaplot2_new)
+#trace("gseaplot2_new", edit = TRUE)
+
+#In the function, look for line 79: "if (pvalue_table) {..." and modify the code from lines 80, 81, 82 and 90 to look like this:
+#        pd <- x[geneSetID, c("NES", "p.adjust")]
+#        rownames(pd) <- ""
+#        pd <- pd[, ]
+#        if (is.null(pvalue_table_rownames)) {
+#            rows <- NULL
+#        }
+#        else {
+#            if (length(pvalue_table_rownames) != 1) {
+#                stop("the length of `pvalue_table_rownames` should be equal to 1")
+#            }
+#            rows <- x[geneSetID, ""]
+
+# Also to modify aesthetics: modify line 12 and replace panel.grid.major.y wtih:
+#       panel.grid.major.y = element_line(colour = "grey92"), panel.grid.minor.y = element_blank()) + 
+
+# Finally, change color of lower plot from "grey92" to "black" by modifying line 62.
+
+# Check if plot looks as desired by running this code:
+gseaplot2_new(GSEA_CP, geneSetID = 1, title = paste0("Top GSEA pathway in Dermis: \n", GSEA_CP$Description[1]), pvalue_table = TRUE)
+  
+  
+```
+
+```{r}
+# Create custome GSEA score plot for Top GSEa pathway
+gseaplot2_new(GSEA_CP, geneSetID = 1, title = paste0("Top GSEA pathway in Dermis: \n", GSEA_CP$Description[1]), pvalue_table = TRUE)
+```
+
+```{r}
+# Save gseaplot:
+outTitle <- paste0("GSEA_Test_", pathway_name, TopSinglePathway)
+ggsave(paste0(output_dir, outTitle, ".pdf"),  width = 6, height = 4, units = "in", dpi = 72)
+```
+
+10. Plot multiple TOP GSEA pathways from enrichplot using ggplotify + patchwork
+
+```{r}
+# 10. Plot multiple TOP GSEA pathways from clusterProfiler using ggplotify + patchwork
+p1 = as.ggplot(gseaplot2_new(GSEA_CP, geneSetID = 1, title = GSEA_CP$Description[1], pvalue_table = TRUE))
+p2 = as.ggplot(gseaplot2_new(GSEA_CP, geneSetID = 2, title = GSEA_CP$Description[2], pvalue_table = TRUE))
+p3 = as.ggplot(gseaplot2_new(GSEA_CP, geneSetID = 3, title = GSEA_CP$Description[3], pvalue_table = TRUE))
+p4 = as.ggplot(gseaplot2_new(GSEA_CP, geneSetID = 4, title = GSEA_CP$Description[4], pvalue_table = TRUE))
+  
+patchwork <- (p1 + p2 + p3 + p4)
+patchwork + plot_annotation(
+  title = "Dermis",
+  theme = theme(plot.title = element_text(size = 20)))
+
+```
+
+```{r}
+# Save GSEA summary table plot: 
+outTitle <- paste0("GSEA_CP_", gene_set_name , "_TopPathways")
+ggsave(paste0(output_dir, outTitle, ".pdf"),  width = 9, height = 8.5, units = "in", dpi = 72)
+```
+
+# Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+- Customizing different sections of the plot is possible. Please refer to fgsea, clusterProfiler and enrichplot documentation for additional details.

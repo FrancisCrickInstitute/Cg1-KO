@@ -1,0 +1,143 @@
+---
+title: "Boxplots"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+# Boxplots from Gene Expression Counts
+
+- This script allows to create boxplots using ggplot2 package to visualize expression levels of specific genes using normalized counts on a dataframe that has been converted from wide to long and its the output of the script "**03_DataWideToLong.qmd**".
+
+- The significance indicated by the p value in the boxplot is taken from the padj (p adjusted) value from dataframe DESeq that is the annotated output from DESeq, which was generated with the script "**04_DiffGeneExpression.qmd**" and relies on the values and comparisons selected during the analysis using DESeq2 package. For more detailed information, please refer to DESeq2 documentation.
+
+```{r}
+# Load Libraries
+#| echo: false
+#| message: false
+library(ggplot2)
+library(ggrepel)
+library(tidyverse)
+library(magrittr)
+```
+
+1.  The long count dataframe can be imported using the following code:
+
+```{r}
+# 1. Read CLEAN FINAL filtered count wide dataframe as csv:
+Tissue_long_vst_counts <- read.csv(file= paste0(output_dir,"Tissue_long_vst_counts.csv"))
+Tissue_long_vst_counts = Tissue_long_vst_counts[,-1] # to remove the first column X with row numbers
+```
+
+2.  The DESeq dataframe can be imported using this code
+
+```{r}
+# 2. Read DESEq results file as dataframe:
+Tissue_DESeq <- read.csv(file= paste0(output_dir,"Tissue_DESeq.csv"))
+Tissue_DESeq = Tissue_DESeq[,-1] # Optional to remove first column in case is numbers from row names. 
+```
+
+3.  Create a boxplot with one gene at the time.
+
+```{r}
+# 7. Plot normalized data for QC GOI using Boxplots with using vst counts:
+# GOI = Trgc1 (the gene that is deleted in TCR KO samples)
+mydata = Tissue_long_vst_counts
+mydata_source = "Tissue_long_vst_counts"
+mygene = "Trgc1"
+mydata_pvalue = Tissue_DESeq
+
+# Extract the p-value for the current gene
+  pvalue <- mydata_pvalue[which(mydata_pvalue$gene_name == mygene), "padj"]
+  pvalue
+  
+# Check if the pvalue is available
+  if (is.na(pvalue)) {
+    p_label <- "padj = NA"
+  } else {
+    p_label <- paste("p =", format(pvalue, digits = 2))
+  }
+p_label
+
+  
+ggplot(mydata %>% dplyr::filter(gene == mygene), aes(x = Genotype, y = 2^Expression)) + #2^ for reverse Log transformed (or vst transforemd) data to plot counts in high values
+  geom_boxplot(aes(fill = Genotype)) +
+  geom_jitter(width = 0.05, size = 3) +
+  scale_x_discrete(limits=c("WT", "TCR KO")) +
+  scale_fill_manual(values = c("salmon","grey40")) + # c("red","dodgerblue")
+  labs(y = "Normalized Counts", title = paste("Tissue: expression of", mygene)) +
+  geom_text_repel(aes(label = Replicate)) + #or label = Replicate depending on column name
+  #theme_bw(base_size = 12) +
+  theme_classic(base_size = 12) +
+  #theme(panel.border = element_rect(colour = "black")) +
+  theme(axis.text = element_text(colour = "black", size = 12)) +
+  theme(axis.text.x = element_text(angle = 0, colour = "black", size = 12)) +
+  theme(legend.position="none") +
+  # Add the p-value annotation
+  #annotate("text", x = 1.5, y = max((subset(mydata, gene == mygene))$Expression) * 1.02, label = p_label, size = 5) 
+  annotate("text", x = 1.5, y = (2^max((subset(mydata, gene == mygene))$Expression) * 1.1), label = p_label, size = 5) # uncomment if using 2^Expression if using this in aes
+```
+
+```{r}
+# Save boxplot with ggsave: CAREFULLY RENAME
+ggsave(paste0(output_dir,"Bp_unlog_", mygene, "_", mydata_source, ".pdf"),  width = 3.5, height = 3.5, units = "in")
+```
+
+4.  Define GOI list
+
+```{r}
+GOI <- c("Trgc1", "Trgv5", "Trgc3")
+```
+
+5.  Make Boxplots in Loop
+
+```{r}
+# 5. Boxplots of multiple genes in Loop saved in the same pdf,
+mydata = Tissue_long_vst_counts
+mydata_source = "Tissue_long_vst_counts"
+mydata_pvalue = Tissue_DESeq
+
+
+pdf(paste0(output_dir,"BP_TCR-genes_unlog", mydata_source, ".pdf"), width = 3.5, height = 3.5)
+for (mygene in GOI){
+  print(mygene)
+ 
+  if (!mygene %in% mydata_pvalue$gene_name) {
+    #pvalue = "NA"
+    p_label <- "p = NA"
+  } else {
+     # Extract the p-value for the current gene
+  pvalue <- mydata_pvalue[which(mydata_pvalue$gene_name == mygene), "padj"]
+  p_label <- paste("p =", format(pvalue, digits = 2))
+  }
+  
+  bp<- ggplot(mydata %>% dplyr::filter(gene == mygene), aes(x = Genotype, y = 2^Expression)) + #2^ for reverse Log transformed (or vst transforemd) data to plot counts in high values (y = 2^Expression)
+  geom_boxplot(aes(fill = Genotype)) +
+  geom_jitter(width = 0.05, size = 3) +
+  scale_x_discrete(limits=c("WT", "TCR KO")) +
+  scale_fill_manual(values = c("salmon","grey40")) +
+  labs(y = "Normalized Counts", title = paste("Tissue (Vg5):", mygene)) +
+  geom_text_repel(aes(label = Replicate)) + #or label = Replicate depending on column name
+  #theme_bw(base_size = 12) +
+  theme_classic(base_size = 14) +
+  #theme(panel.border = element_rect(colour = "black")) +
+  theme(axis.text = element_text(colour = "black", size = 14)) +
+  theme(axis.text.x = element_text(angle = 0, colour = "black", size = 14)) +
+   theme(legend.position="none") +
+  # Add the p-value annotation
+  annotate("text", x = 1.5, y = (2^max((subset(mydata, gene == mygene))$Expression) * 1.2), label = p_label, size = 5) # add 2^max if using this in aes
+  
+  print(bp)
+  
+}
+
+dev.off()
+
+
+```
+
+# Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+- Customizing different sections of the plot is possible. Please refer to ggplot documentation for additional details.

@@ -1,0 +1,140 @@
+---
+title: "Extended_Data_7f_Human"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+# Extended_Data_7f_Human
+
+This script re-creates the PCA plot from Extended_Data_7f_Human with the output data generated from **01_processing.qmd** script.
+
+```{r}
+# Load Libraries
+#| echo: false
+#| message: false
+library(DESeq2)
+library(limma)
+library(org.Hs.eg.db)
+```
+
+```{r}
+######### II. Normalize using DESeq2 ----------------------------------------------
+
+# 1. Create a DESeqDataSet object:
+# design= ~ batch + condition --> The design indicates how to model the samples, here, that we want to measure the effect of the condition, controlling for batch differences. The two factor variables batch and condition should be columns of coldata.
+# Note: In order to benefit from the default settings of the package, you should put the variable of interest at the end of the formula and make sure the control level is the first level.
+dds = DESeqDataSetFromMatrix(
+    countData = Human_Raw_Counts,
+    colData = Human_colData,
+    design= ~ Condition)
+```
+
+```{r}
+# 2. Remove Batch effect using limma package
+vsd_with_batch <- vst(dds)
+vsd_without_batch = vst(dds)
+assay(vsd_without_batch) <- limma::removeBatchEffect(assay(vsd_with_batch), vsd_with_batch$Batch)
+
+```
+
+```{r}
+# 3. Plot a PCA for QC after removing batch effect 
+plotPCA(vsd_without_batch, "Batch")
+
+WTvsKO_colors = c("grey40", "red4")
+
+PCAwithoutBatch <- plotPCA(vsd_without_batch, "Condition")
+PCAwithoutBatch + 
+  geom_text(aes(label = colnames(vsd_without_batch)), show.legend = FALSE, size = 5, vjust = "inward", hjust = "inward", position = position_nudge(x = 0, y = 2)) +
+        theme(text=element_text(size=15), legend.text=element_text(size=8)) +
+        theme_bw(base_size = 15) + coord_fixed(ratio = 0.75) +
+        ggtitle("Human") +
+        theme(legend.background=element_blank()) +
+        scale_colour_manual(values= WTvsKO_colors,
+                     name="Condition",
+                     breaks=c("Control", "KO"),
+                     labels=c("Control", "KO")
+                     )
+```
+
+```{r}
+# Save PCA plot after removing batch effect
+pdf(paste0(output_dir,"Human_PCA_removedBatch.pdf"), 
+    width = 7, height = 4, pointsize = 10)
+print(PCAwithoutBatch + 
+        geom_text(aes(label = colnames(vsd_without_batch)), show.legend = FALSE, size = 5,
+                  vjust = "inward", hjust = "inward", 
+                  position = position_nudge(x = 0, y = 1.2)) +
+        theme(text=element_text(size=15), legend.text=element_text(size=8)) +
+        theme_bw(base_size = 15) + coord_fixed(ratio = 0.75) +
+        ggtitle("Human") +
+        theme(legend.background=element_blank()) +
+        scale_colour_manual(values= WTvsKO_colors,
+                     name="Condition",
+                     breaks=c("Control", "KO"),
+                     labels=c("Control", "KO")
+                     ))
+dev.off()
+```
+
+```{r}
+# 4. Write batch corrected normalized vst matrix for downstream plotting (e.g. for Boxplots or Heatmaps using vst counts):
+Human_normalized_withoutBatch <- assay(vsd_without_batch)
+
+# 5. Modify counts matrix to add gene names
+
+# a) Create geneid dataframe to assign gene names to Ensemble_id
+Human_normalized_withoutBatch = as.data.frame(Human_normalized_withoutBatch)
+Human_normalized_withoutBatch <- tibble::rownames_to_column(Human_normalized_withoutBatch, "Ensembl_id")
+
+# b) Get gene symbols from org.Hs.eg.db
+gene_id.hs  = data.frame(
+  Ensembl = Human_normalized_withoutBatch$Ensembl_id,
+  symbol = NA
+)
+
+
+gene_id.hs$symbol = mapIds(
+  org.Hs.eg.db,
+  keys = Human_normalized_withoutBatch$Ensembl_id,
+  column = "SYMBOL",
+  keytype = "ENSEMBL",
+  multiVals = "first"
+)
+
+# c) Check all Ensembl_ids in geneid dataframe matches the gene_ids in counts dataframe
+all(Human_normalized_withoutBatch$Ensembl_id == gene_id.hs$Ensembl
+    )
+
+# d) Insert gene name comlumn in counts dataframe from geneid dataframe symbol column
+Human_normalized_withoutBatch$gene = gene_id.hs$symbol
+
+# From this point, counts dataframe has gene name to facilitate searching genes #<-------
+
+
+```
+
+### From this point, counts dataframe has gene name to facilitate searching genes
+
+```{r}
+# 6. Exporting Normalized Counts as csv dataframe:
+write.csv(Human_normalized_withoutBatch, 
+          file= paste0(output_dir,"Human_normalized_withoutBatch.csv")) 
+# CHECK --> file save in output_dir
+
+```
+
+# Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+- Check that counts dataframe (normalized without batch) has the correct columns.
+
+- If dataframe look Ok, proceed to 03_DataWideToLong.qmd which is required for Boxplots.
+
+- This dataframe is also the input for creating heatmaps.
+
+```{r}
+sessionInfo()
+```

@@ -1,0 +1,106 @@
+---
+title: "Figure_3h_Gut"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+# Figure_3h_Gut
+
+- This script allows to re-create the heatmap of Figure_3h_Gut using pheatmap package to visualize gene expression changes across samples at a global scale visualization or for a specific set of genes of interests.
+
+- Starts with a dataframe of normalized counts (vst nornalization) that where gene names were inserted as a column and is the annotated output from "**02_normalization-QC.qmd**" script.
+
+```{r}
+# Load Libraries
+#| echo: false
+#| message: false
+library(ggrepel)
+library(tidyverse)
+library(magrittr)
+library(pheatmap)
+library(dendsort)
+library(dichromat)
+library(viridis)
+library(colorRamps)
+```
+
+1.  The normalized counts data can be imported using the following code:
+
+```{r}
+# 1. Read CLEAN FINAL filtered count wide dataframe as csv:
+Gut_normalized_withoutBatch <- read.csv(file= paste0(output_dir,"Gut_normalized_withoutBatch.csv"))
+Gut_normalized_withoutBatch = Gut_normalized_withoutBatch[,-1] # to remove the first column X with row numbers
+
+```
+
+2.  Define specific inputs, sample orders and custom colors palettes
+
+```{r}
+# 2. Subset dataframe to define all DEG gene inputs
+
+GOI <- c("Tigit", "Jun",	"Junb", "Xcl1", "Klrb1a", "Klra3", "Klra6", "Klre1", "Klrh1")
+
+GOI_counts <- filter(Gut_normalized_withoutBatch, gene %in% GOI)
+
+myGOI_hm = GOI_counts
+myGOI_name = "_GOI_"
+
+rownames(myGOI_hm) = myGOI_hm$gene
+
+head(myGOI_hm)
+
+# Define order of samples:
+my_col_order <- c("GUT_1_WT",  "GUT_2_WT",  "GUT_8_WT",  "GUT_3_HET", "GUT_4_HET", "GUT_5_HET", "GUT_7_HET")
+
+# Define custome color pallete
+BuWhOrRed = colorRampPalette(c("blue", "white", "orangered1"))(256)
+colorHM = BuWhOrRed
+
+```
+
+3.  Create GOI heatmap using pheatmap package
+
+```{r}
+# 3. Plot heatmap using pheatmap package
+# if needed check this: https://slowkow.com/notes/pheatmap-tutorial/
+
+callback = function(hc, ...){dendsort(hc, isReverse=T)} #<- to re-order clustering
+Tissue = "Gut"
+outTitle <- paste0("HM_", Tissue, myGOI_name)
+save_hm = paste0(output_dir, outTitle, ".pdf")
+
+pheatmap(myGOI_hm[, my_col_order], #myGOI_hm[, 2:7] <-- for individual replicates
+         scale = "row", #<- replace "column" to "none" to display source vst values
+         display_numbers = F, #<- FALSE = no numbers
+         cluster_cols = T, 
+         cluster_rows = T,
+         #kmeans_k = 5,
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete", 
+         clustering_callback = callback, #<- for re-order clustering
+         treeheight_row = 0, 
+         treeheight_col = 0,
+         #annotation_row = my_gene_col,
+         cutree_cols = 2, 
+         cutree_rows = 2, 
+         border_color = FALSE, #number_color = "black",
+         #show_rownames = FALSE,
+         #show_colnames     = FALSE,
+         angle_col = "45",
+         cellwidth = 20, 
+         cellheight = 15, 
+         color = colorHM, 
+         #breaks = breaks,
+         fontsize_row = 10, fontsize_col = 11,
+         width = 4, height = 4.2, filename = save_hm, # <---- UNCOMMENT TO SAVE PLOT
+         main = "Gut GOI") #myGOI_name
+```
+
+# Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+```{r}
+sessionInfo()
+```

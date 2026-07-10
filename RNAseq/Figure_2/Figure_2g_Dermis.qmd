@@ -1,0 +1,80 @@
+---
+title: "Figure_2g_Dermis"
+author: "Nicolas Veland"
+format: html
+editor: visual
+---
+
+# Figure_2g_Dermis
+
+- This script allows to re-create volcano plot from Figure_2g_Dermis using ggplot2 package to visualize differential gene expression analysis after running DESeq.
+
+- Starts with a dataframe ("Dermis_DESeq.csv") that is the annotated output from DESeq, which was generated with the script "**04_DiffGeneExpression.qmd"** and relies on the values and comparisons selected during the analysis using DESeq2 package. For more detailed information, please refer to DESeq2 documentation.
+
+```{r}
+# Load Libraries
+#| echo: false
+#| message: false
+library(ggplot2)
+library(ggrepel)
+library(tidyverse)
+library(magrittr)
+```
+
+1.  The data from DESeq can be imported using the following code:
+
+```{r}
+# 1. Read DESEq results file as dataframe:
+Dermis_DESeq <- read.csv(file= paste0(output_dir,"Dermis_DESeq.csv"))
+Dermis_DESeq = Dermis_DESeq[,-1] # Optional to remove first column in case is numbers from row names. 
+```
+
+2.  A set of genes of interest (GOI) can be created as vector and use to label genes in the volcano
+
+```{r}
+# 2. Creat GOI list as a vector :
+GOI <- c("Rasa2", "Itgae", "Jun",	"Junb", "Xcl1",	"Tigit", "Trgc1", "Trgc3", "Trgv4", "Trgv6", "Ccl3", "Ccl5", "Il13", "Tnfrsf9", "Klra1", "Klra3", "Klra5", "Klra6", "Klra7", "Klrb1", "Klrb1a", "Klrc1", "Klre1", "Klrg1", "Klrh1", "Klri1", "Klri2", "Klrk1", "Gzmb", "Gzma")
+```
+
+3.  Plot Volcano
+
+```{r}
+# 3. Volcano plot with GOI labeled:
+Dermis_DESeq %>% 
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) +
+  geom_point(alpha=0.7, aes(colour=gene_change)) +
+  scale_colour_manual(values = c("blue","grey","red")) +
+  geom_hline(yintercept = -(log10(0.05)), linetype="dashed", colour="grey") +
+  geom_text_repel(data = Dermis_DESeq %>% 
+                    filter(gene_name %in% GOI) 
+                  %>%  filter(padj <= 0.05), 
+                  aes(label=gene_name), size = 5, fontface = "italic", max.overlaps = 20, 
+                  force_pull = 0.1,  box.padding = 1, force = 6,) +  
+  ylim(0,200) + 
+  xlim(-8, 8) + 
+  labs(colour = "") +
+  ggtitle("Dermis") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(size = 14)) +
+  theme(axis.text.x = element_text(angle = 0, colour = "black", size = 12)) +
+  theme(axis.text.y = element_text(angle = 0, colour = "black",  size = 12)) +
+  theme(legend.title = element_text(size = 14)) +
+  theme(legend.text = element_text(size = 12))
+```
+
+```{r}
+# 4. Save Volcano plot: CHECK NAME CAREFULLY
+outTitle <- paste0("Figure_2g_Dermis")
+ggsave(paste0(output_dir, outTitle, ".pdf"),  width = 5, height = 5, units = "in", dpi = 72)
+```
+
+# Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+- Customizing different sections of the plot is possible. Please refer to ggplot documentation for additional details.
+
+```{r}
+sessionInfo()
+```
