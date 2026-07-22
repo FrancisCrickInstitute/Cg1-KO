@@ -7,7 +7,7 @@ editor: visual
 
 # Extended_Data_4j_Gut
 
-- This script allows to re-create boxplots included in Extended_Data_3d_Gut using ggplot2 package to visualize expression levels of specific genes using normalized counts on a dataframe that has been converted from wide to long and its the output of the script "**03_DataWideToLong.qmd**".
+- This script allows to re-create boxplots included in Extended_Data_4j_Gut using ggplot2 package to visualize expression levels of specific genes using normalized counts on a dataframe that has been converted from wide to long and its the output of the script "**03_DataWideToLong.qmd**".
 
 - The significance indicated by the p value in the boxplot is taken from the padj (p adjusted) value from dataframe DESeq that is the annotated output from DESeq, which was generated with the script "**04_DiffGeneExpression.qmd**" and relies on the values and comparisons selected during the analysis using DESeq2 package. For more detailed information, please refer to DESeq2 documentation.
 

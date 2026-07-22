@@ -45,39 +45,39 @@ ifelse(!dir.exists(file.path(output_dir)),
 ######### I. Format rsem counts file for analysis.-----------------------------------
 
 # 1. Read rsem counts data as dataframe:
-Gut_Raw_Counts = read.delim(file= "~/Documents/My_R/Github_Cg1-KO/RNAseq/Gut_RNAseq/Gut_rsem.merged.gene_counts.tsv")
+Epidermis_Raw_Counts = read.delim(file= "~/Documents/My_R/Github_Cg1-KO/RNAseq/Epidermis_RNAseq/Epidermis_rsem.merged.gene_counts.tsv")
 # read.delim is used for reading nfcore output rsem.merged.gene_counts.tsv files as dataframes
-# REPLACE name of file according to tissue used (e.g. for EpiGut use Gut_Raw_Counts)
+# REPLACE name of file according to tissue used (e.g. for EpiEpidermis use Epidermis_Raw_Counts)
 # --> REPLACE "your/pathway/to/your/data/directory/that/contains/nfcore/output/rsem.merged.gene_counts.tsv 
 
 # 2. Organize rsem counts dataframe:
-row.names(Gut_Raw_Counts) = Gut_Raw_Counts[,1] 
+row.names(Epidermis_Raw_Counts) = Epidermis_Raw_Counts[,1] 
 # set rownames to be the first column from the counts data frame
 
-Gut_Raw_Counts = as.matrix(Gut_Raw_Counts[,-1:-2]) 
+Epidermis_Raw_Counts = as.matrix(Epidermis_Raw_Counts[,-1:-2]) 
 # deselect the first two columns and convert to a matrix
 
-Gut_Raw_Counts =  round(Gut_Raw_Counts) 
+Epidermis_Raw_Counts =  round(Epidermis_Raw_Counts) 
 # round numerical values to integers
 
 
 # 3. Create information table (colData file) as dataframe with correct row names:
-Gut_colData = read.delim(file = "~/Documents/My_R/Github_Cg1-KO/RNAseq/Gut_RNAseq/Gut_colData.txt", row.names = 1)
+Epidermis_colData = read.delim(file = "~/Documents/My_R/Github_Cg1-KO/RNAseq/Epidermis_RNAseq/Epidermis_colData.txt", row.names = 1)
 # row.names = 1 --> sets rownames to be the first column from the colData frame
-# Replace name of file according to tissue used (e.g. for EpiGut use Gut_colData)
+# Replace name of file according to tissue used (e.g. for EpiEpidermis use Epidermis_colData)
 # --> REPLACE "your/pathway/to/your/data/directory/that/contains/colData.txt
 
 # Check that rownames(Epi_colData) == colnames(Epi_Raw_Counts)
-rownames(Gut_colData) == colnames(Gut_Raw_Counts)
+rownames(Epidermis_colData) == colnames(Epidermis_Raw_Counts)
 
 # 4. Rename rownames of colData:
-rownames(Gut_colData) = Gut_colData$Sample
+rownames(Epidermis_colData) = Epidermis_colData$Sample
 
 # 5. Rename colnames of Raw_Counts:
-colnames(Gut_Raw_Counts) = Gut_colData$Sample
+colnames(Epidermis_Raw_Counts) = Epidermis_colData$Sample
 
 # 6. Confirm that rownames(Epi_colData) == colnames(Epi_Raw_Counts)
-rownames(Gut_colData) == colnames(Gut_Raw_Counts)
+rownames(Epidermis_colData) == colnames(Epidermis_Raw_Counts)
 
 
 

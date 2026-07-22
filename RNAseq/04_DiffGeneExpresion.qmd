@@ -63,8 +63,8 @@ library(magrittr)
 # design= ~ batch + condition --> The design indicates how to model the samples, here, that we want to measure the effect of the condition, controlling for batch differences. The two factor variables batch and condition should be columns of coldata.
 # Note: In order to benefit from the default settings of the package, you should put the variable of interest at the end of the formula and make sure the control level is the first level.
 dds_Tissue = DESeqDataSetFromMatrix(
-    countData = Gut_Raw_Counts,
-    colData = Gut_colData,
+    countData = Epidermis_Raw_Counts,
+    colData = Epidermis_colData,
     design= ~ Batch + Genotype)
 ```
 
@@ -82,27 +82,28 @@ dds_Tissue$Genotype = relevel(dds_Tissue$Genotype, "WT")
 # run again levels(dds$Genotype) to check the correct order 
 levels(dds_Tissue$Genotype)
 
+dds_Tissue$Batch = factor(dds_Tissue$Batch)
 ```
 
 ```{r}
 # 3. Run DESeq analysis function:
-Gut_DESeq = DESeq(dds_Tissue)
+Epidermis_DESeq = DESeq(dds_Tissue)
 
 ```
 
 ```{r}
 # 4. Examining DESeq results:
-resultsNames(Gut_DESeq)
+resultsNames(Epidermis_DESeq)
 
-Gut_DESeq = results(Gut_DESeq, name = "Genotype_KO_vs_WT")
+Epidermis_DESeq = results(Epidermis_DESeq, name = "Genotype_KO_vs_WT")
 
 # Results with lfcShrink: This is optional alternative approach for the analysis using DESeq2. For more details, please refer to the DESeq2 documentation.
-#Gut_DESeq2 = lfcShrink(dds_Tissue, coef = "Genotype_KO_vs_WT", type = "apeglm")
+#Epidermis_DESeq2 = lfcShrink(dds_Tissue, coef = "Genotype_KO_vs_WT", type = "apeglm")
 ```
 
 ```{r}
 # 5. Exporting DESeq2 results as csv dataframe:
-write.csv(as.data.frame(Gut_DESeq), file= paste0(output_dir,"Gut_DESeq.csv"))
+write.csv(as.data.frame(Epidermis_DESeq), file= paste0(output_dir,"Epidermis_DESeq.csv"))
 ```
 
 ## B. Read and organize DESeq2 analysis.
@@ -111,21 +112,21 @@ write.csv(as.data.frame(Gut_DESeq), file= paste0(output_dir,"Gut_DESeq.csv"))
 ######### B. Read and organize DESeq2 analysis.-----------------------------------
 
 # 6. Read DESEq results file as dataframe:
-Gut_DESeq <- read.csv(file= "~/Documents/My_R/Github_Cg1-KO/RNAseq/Figure_3/Gut_DESeq.csv")
+Epidermis_DESeq <- read.csv(file= paste0(output_dir,"Epidermis_DESeq.csv"))
 
 
 # 7. Check all Ensembl_ids (column X) in Ensembl_symbol dataframe matches the Ensembl_ids (column X) in DESeq dataframe:
-all(Gut_DESeq$X == geneid$Ensembl)
+all(Epidermis_DESeq$X == geneid$Ensembl)
 
 # 8. Insert gene_name comlumn in DESeq dataframe from Ensembl_symbol dataframe symbol column:
-Gut_DESeq$gene_name = geneid$symbol
+Epidermis_DESeq$gene_name = geneid$symbol
 
 
 # Check that TCR genes are annotated correctly and double check with Ensembl ID (e.g. ENSMUSG00000076746 = Trgv6). If not present, may need to be added manually.
 
-Gut_DESeq$gene_name[21741] = "Trgv6"
+Epidermis_DESeq$gene_name[21741] = "Trgv6"
 
-head(Gut_DESeq)
+head(Epidermis_DESeq)
 
 
 
@@ -140,57 +141,57 @@ From this point, DESEQ2 dataframe has gene name to facilitate searching genes.
 ######### C. Define DEG from DESeq2 analysis.-----------------------------------
 
 # 9. Filter by removing NA in padj and setting up baseMean:
-Gut_DESeq %<>%
+Epidermis_DESeq %<>%
   as.data.frame() %>%
   filter(!is.na(padj)) %>%
   filter(baseMean >= 10)
 
 # Are there trascripts without a gene_name that have NA instead? which ones?
-length(which(is.na(Gut_DESeq$gene_name)))
+length(which(is.na(Epidermis_DESeq$gene_name)))
 
 
 # Replace transcripts with NA in gene_name for their Ensembl ID:
-Gut_DESeq$gene_name[which(is.na(Gut_DESeq$gene_name))] <- Gut_DESeq$X[which(is.na(Gut_DESeq$gene_name))]
+Epidermis_DESeq$gene_name[which(is.na(Epidermis_DESeq$gene_name))] <- Epidermis_DESeq$X[which(is.na(Epidermis_DESeq$gene_name))]
 
 # 10. Significance cut-off:
-Gut_DESeq %<>%
+Epidermis_DESeq %<>%
   mutate(sig = if_else(padj <= 0.05, "significant", "not-significant"))
 
-head(Gut_DESeq)
+head(Epidermis_DESeq)
 ```
 
 ```{r}
 # 11. Count number of genes per condition and assigned to groups based on expression changes
 
 #Down_DEG
-length(which(Gut_DESeq$sig == "significant" & Gut_DESeq$log2FoldChange < 0))
-N_Down_DEG = length(which(Gut_DESeq$sig == "significant" &
-                            Gut_DESeq$log2FoldChange < 0))
-Down_DEG = which(Gut_DESeq$sig == "significant" & 
-                   Gut_DESeq$log2FoldChange < 0)
+length(which(Epidermis_DESeq$sig == "significant" & Epidermis_DESeq$log2FoldChange < 0))
+N_Down_DEG = length(which(Epidermis_DESeq$sig == "significant" &
+                            Epidermis_DESeq$log2FoldChange < 0))
+Down_DEG = which(Epidermis_DESeq$sig == "significant" & 
+                   Epidermis_DESeq$log2FoldChange < 0)
 
 #Up_DEG
-length(which(Gut_DESeq$sig == "significant" & Gut_DESeq$log2FoldChange > 0))
-N_Up_DEG = length(which(Gut_DESeq$sig == "significant" &
-                          Gut_DESeq$log2FoldChange > 0))
-Up_DEG = which(Gut_DESeq$sig == "significant" &
-                 Gut_DESeq$log2FoldChange > 0)
+length(which(Epidermis_DESeq$sig == "significant" & Epidermis_DESeq$log2FoldChange > 0))
+N_Up_DEG = length(which(Epidermis_DESeq$sig == "significant" &
+                          Epidermis_DESeq$log2FoldChange > 0))
+Up_DEG = which(Epidermis_DESeq$sig == "significant" &
+                 Epidermis_DESeq$log2FoldChange > 0)
 
 #All_DEG:
-length(which(Gut_DESeq$sig == "significant"))
-N_All_DEG = length(which(Gut_DESeq$sig == "significant"))
-All_DEG = which(Gut_DESeq$sig == "significant")
+length(which(Epidermis_DESeq$sig == "significant"))
+N_All_DEG = length(which(Epidermis_DESeq$sig == "significant"))
+All_DEG = which(Epidermis_DESeq$sig == "significant")
 
 #Epi_DEG_df = Epi_res_noBatch_DESEq %>% filter(Epi_res_noBatch_DESEq$sig == "significant")
 #Epi_DEG_list = Epi_DEG_df$gene_name
 
 # Unchanged genes:
-length(which(Gut_DESeq$sig == "not-significant"))
-N_Unchanged = length(which(Gut_DESeq$sig == "not-significant"))
+length(which(Epidermis_DESeq$sig == "not-significant"))
+N_Unchanged = length(which(Epidermis_DESeq$sig == "not-significant"))
 
 # Total genes:
-length(Gut_DESeq$sig)
-N_Total = length(Gut_DESeq$sig)
+length(Epidermis_DESeq$sig)
+N_Total = length(Epidermis_DESeq$sig)
 
 N_All_DEG == sum(N_Down_DEG, N_Up_DEG)
 N_Total == sum(N_Down_DEG, N_Up_DEG, N_Unchanged)
@@ -210,7 +211,7 @@ table_DEG = matrix(c(1:5), ncol=5, byrow=TRUE)
 
 # specify the column names and row names of matrix
 colnames(table_DEG) = c("Down_DEG", "Up_DEG", "All_DEG", "Unchanged", "Total")
-rownames(table_DEG) <- c("Gut_DESeq")
+rownames(table_DEG) <- c("Epidermis_DESeq")
 
 table_DEG[1,1] = N_Down_DEG
 table_DEG[1,2] = N_Up_DEG
@@ -221,28 +222,28 @@ table_DEG[1,5] = N_Total
 table_DEG
 
 table_DEG = as.table(table_DEG)
-#write.csv(table_DEG, file= paste0(output_dir,"Table_Gut_DESeq.csv"), row.names = TRUE, col.names = TRUE)
+write.csv(table_DEG, file= paste0(output_dir,"Table_Epidermis_DESeq.csv"), row.names = TRUE, col.names = TRUE)
 
-table_DEG
+
 ```
 
 ```{r}
 # 13. Create gene_change column:
-Gut_DESeq$gene_change = "Unchanged"
+Epidermis_DESeq$gene_change = "Unchanged"
 
-Gut_DESeq$gene_change[Down_DEG] = "Down in KO"
-Gut_DESeq$gene_change[Up_DEG] = "Up in KO"
+Epidermis_DESeq$gene_change[Down_DEG] = "Down in KO"
+Epidermis_DESeq$gene_change[Up_DEG] = "Up in KO"
 
 # 14. Export complete DESeq dataframe as csv:
-write.csv(as.data.frame(Gut_DESeq), 
-          file= paste0(output_dir,"Gut_DESeq.csv"))
+write.csv(as.data.frame(Epidermis_DESeq), 
+          file= paste0(output_dir,"Epidermis_DESeq.csv"))
 ```
 
 # Notes:
 
 - Always check that output_dir is the correct destination before saving the file and check that export was successful.
 
-- Check that Gut_DESeq dataframe has the correct columns and information.
+- Check that Epidermis_DESeq dataframe has the correct columns and information.
 
 - If dataframe look Ok, proceed to plotting using 05_Boxplots.qmd, 06_Volcano.qmd and 07_GSEA.qmd.
 
