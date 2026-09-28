@@ -3,6 +3,10 @@
 
 **/.DS_Store
 
+.DS_Store
+RNAseq/.DS_Store
+ATACseq/.DS_Store
+
 # History files
 .Rhistory
 .Rapp.history
