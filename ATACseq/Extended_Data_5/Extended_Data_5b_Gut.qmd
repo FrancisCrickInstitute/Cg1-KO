@@ -1,0 +1,168 @@
+---
+title: "Extended_Data_5a_Epidermis"
+format: html
+editor: visual
+---
+
+# Extended_Data_5b_Gut
+
+This script re-creates the volcano plot from Extended_Data_5b_Gut with the output data generated from **1_consensus_peaks.sh and 2_downstream_DA_and_annotation.R** scripts.
+
+```{r}
+
+# Load Libraries
+#| echo: false
+#| message: false
+
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(ggrepel)
+library(ggpubr)
+
+```
+
+```{r}
+# Set wd:
+
+setwd("~/Documents/My_R/ATAC")
+
+# Create output_dir:
+output_dir <- "/Users/velandn/Documents/My_R/Github_TEST/ATAC/"
+
+ifelse(!dir.exists(file.path(output_dir)),
+        dir.create(file.path(output_dir)),
+        "Directory Exists")
+```
+
+A. Load files:
+
+```{r}
+# 1. Read CLEAN DA_K0_vs_WT.tsv as dataframe:
+DA_Gut_KO_WT=read.delim(file = "~/Documents/My_R/Github_Cg1-KO/ATACseq/Gut_ATACseq/Gut_DA_KO_vs_WT.tsv")
+```
+
+B. Obtain counts for number of peaks and setup thresholds for significance and direction:
+
+```{r}
+# 1. Count total peaks
+length(DA_Gut_KO_WT$Start)
+
+
+# 2. Significance cut-off:
+DA_Gut_KO_WT %<>%
+  mutate(sig = if_else(FDR <= 0.05, "significant", "not-significant"))
+
+# 3. Count number of peaks per group
+# Total peaks:
+length(DA_Gut_KO_WT$sig)
+N_Total = length(DA_Gut_KO_WT$sig)
+
+#All_DAR:
+length(which(DA_Gut_KO_WT$sig == "significant"))
+N_All_DAR = length(which(DA_Gut_KO_WT$sig == "significant"))
+All_DAR = which(DA_Gut_KO_WT$sig == "significant")
+
+#Down_DAR
+length(which(DA_Gut_KO_WT$sig == "significant" & DA_Gut_KO_WT$logFC < 0))
+N_Down_DAR = length(which(DA_Gut_KO_WT$sig == "significant" & DA_Gut_KO_WT$logFC < 0))
+Down_DAR = which(DA_Gut_KO_WT$sig == "significant" & DA_Gut_KO_WT$logFC < 0)
+
+#Up_DAR
+length(which(DA_Gut_KO_WT$sig == "significant" & DA_Gut_KO_WT$logFC > 0))
+N_Up_DAR = length(which(DA_Gut_KO_WT$sig == "significant" & DA_Gut_KO_WT$logFC > 0))
+Up_DAR = which(DA_Gut_KO_WT$sig == "significant" & DA_Gut_KO_WT$logFC > 0)
+
+# Unchanged DAR:
+length(which(DA_Gut_KO_WT$sig == "not-significant"))
+N_Unchanged_DAR = length(which(DA_Gut_KO_WT$sig == "not-significant"))
+
+N_All_DAR == sum(N_Down_DAR, N_Up_DAR)
+N_Total == sum(N_Down_DAR, N_Up_DAR, N_Unchanged_DAR)
+
+```
+
+```{r}
+# print numbers:
+N_Down_DAR
+N_Up_DAR 
+N_All_DAR
+N_Unchanged_DAR
+N_Total
+```
+
+```{r}
+# 4. Creat Table with DAR numbers
+# create matrix with 4 columns and 4 rows
+table_DAR = matrix(c(1:5), ncol=5, byrow=TRUE)
+
+# specify the column names and row names of matrix
+colnames(table_DAR) = c("Down_DAR", "Up_DAR", "All_DAR", "Unchanged", "Total")
+rownames(table_DAR) <- c("DA_Gut_KO_WT")
+
+table_DAR[1,1] = N_Down_DAR
+table_DAR[1,2] = N_Up_DAR
+table_DAR[1,3] = N_All_DAR
+table_DAR[1,4] = N_Unchanged_DAR
+table_DAR[1,5] = N_Total
+
+table_DAR
+
+table_DAR = as.table(table_DAR)
+write.csv(table_DAR, paste0(output_dir,"table_numbers_DA_Gut_KO_WT.csv"), row.names = TRUE, col.names = TRUE)
+
+```
+
+C. Plot data as a Volcano plot :
+
+```{r}
+# Add label of change
+# 1. log2 Fold Change cut-off (create gene_change column):
+DA_Gut_KO_WT$peak_change = "Unchanged"
+
+DA_Gut_KO_WT$peak_change[Down_DAR] = "Down in KO"
+DA_Gut_KO_WT$peak_change[Up_DAR] = "Up in KO"
+```
+
+```{r}
+# 2.Plot Epidermis DAR data as Volcano plot ------------------
+DA_Gut_KO_WT %>% 
+  ggplot(aes(x=logFC, y=-log10(FDR))) +
+  geom_point(alpha=0.75, size = 4, aes(colour=peak_change)) +
+  scale_colour_manual(values = c("blue","grey","red")) +
+  #geom_vline(xintercept = c(-0.5, 0.5), linetype="dashed", colour="grey") +
+  geom_hline(yintercept = -(log10(0.05)), linetype="dashed", colour="grey") +
+  ylim(0,25) + 
+  xlim(-5.5,5.5) + 
+  labs(x = "Log2 Fold Change") +
+  labs(y = "-Log10(FDR)") +
+  labs(colour = "Peak change") +
+  ggtitle("ATAC Gut") +
+  theme_bw(base_size = 18) +
+  theme(panel.grid.minor = element_blank()) +
+  theme(panel.grid.major = element_blank()) +
+  theme(axis.text.x = element_text(angle = 0, colour = "black", size = 14)) +
+  theme(axis.text.y = element_text(angle = 0, colour = "black", size = 14))
+```
+
+```{r}
+# 3. Save Volcano plot: CHECK NAME CAREFULLY
+outTitle <- paste0("ED_5b_ATAC_Gut_Volcano")
+ggsave(paste0(output_dir, outTitle, ".pdf"),  width = 7, height = 5, units = "in", dpi = 72)
+```
+
+D. Export dataframe
+
+```{r}
+# 5. Exporting csv dataframe:
+write.csv(DA_Gut_KO_WT, 
+          file= paste0(output_dir,"Gut_DA_ATAC_KO_WT_labeled.csv"))
+```
+
+# Notes:
+
+- Always check that output_dir is the correct destination before saving the file and check that export was successful.
+
+```{r}
+sessionInfo() 
+```
